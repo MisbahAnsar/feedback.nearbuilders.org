@@ -7,10 +7,9 @@ import { Button, ConfirmDialog, Input, MarkdownEditor } from "@/components";
 import { FeedbackContent } from "@/components/feedback-content";
 import { StarBadge } from "@/components/feedback-star-badge";
 import { FeedbackStatusBadge } from "@/components/feedback-status-badge";
+import { FEEDBACK_TEXT_MAX, feedbackTextLength } from "@/lib/feedback-body";
 import { type FeedbackEntry, invalidateFeedbackQueries } from "@/lib/queries/feedback";
 import { invalidateParticipationQueries } from "@/lib/queries/participation";
-
-const FEEDBACK_BODY_MAX = 5000;
 
 interface FeedbackListProps<T extends FeedbackEntry> {
   roundId: string;
@@ -119,7 +118,8 @@ export function FeedbackList<T extends FeedbackEntry>({
                       aria-label="Edit feedback"
                       value={draft}
                       onChange={setDraft}
-                      maxLength={FEEDBACK_BODY_MAX}
+                      maxLength={FEEDBACK_TEXT_MAX}
+                      measureLength={feedbackTextLength}
                       onPendingUploadsChange={setPendingUploads}
                     />
                   ) : (

@@ -37,6 +37,8 @@ interface MarkdownEditorProps {
   disabled?: boolean;
   /** Hard cap on stored markdown length: edits that would exceed it are reverted. */
   maxLength?: number;
+  /** How a value is measured against maxLength; defaults to its raw length. */
+  measureLength?: (value: string) => number;
   onPendingUploadsChange?: (count: number) => void;
   className?: string;
   editorClassName?: string;
@@ -49,6 +51,7 @@ function MarkdownEditorSurface({
   onChange,
   disabled,
   maxLength,
+  measureLength = (next) => next.length,
   onPendingUploadsChange,
   className,
   editorClassName,
@@ -69,7 +72,7 @@ function MarkdownEditorSurface({
   }, []);
 
   const handleChange = (next: string) => {
-    if (maxLength != null && next.length > maxLength) return;
+    if (maxLength != null && measureLength(next) > maxLength) return;
     onChange(next);
   };
 
