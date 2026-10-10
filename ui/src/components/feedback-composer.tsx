@@ -14,6 +14,7 @@ import {
   SegmentedToggle,
 } from "@/components";
 import { useClientValue } from "@/hooks";
+import { FEEDBACK_TEXT_MAX, feedbackTextLength } from "@/lib/feedback-body";
 import { invalidateFeedbackQueries } from "@/lib/queries/feedback";
 import { invalidateParticipationQueries } from "@/lib/queries/participation";
 import { myFeedbackHref, roundParams } from "@/lib/round-links";
@@ -21,8 +22,6 @@ import type { RoundDetail } from "@/lib/round-route";
 import { absoluteUrl, copyUrl, shareUrl } from "@/lib/share";
 
 type FeedbackFormat = "written" | "recorded";
-
-const FEEDBACK_BODY_MAX = 5000;
 
 const FORMAT_HINTS: Record<FeedbackFormat, string> = {
   written:
@@ -171,13 +170,14 @@ export function FeedbackComposer({ round, accountId }: FeedbackComposerProps) {
             id="feedback-body"
             value={draft.body}
             onChange={(body) => setDraft((prev) => ({ ...prev, body }))}
-            maxLength={FEEDBACK_BODY_MAX}
+            maxLength={FEEDBACK_TEXT_MAX}
+            measureLength={feedbackTextLength}
             aria-label="Feedback"
             disabled={postMutation.isPending}
             onPendingUploadsChange={setPendingUploads}
           />
           <span className="text-right text-xs text-muted-foreground">
-            {draft.body.length}/{FEEDBACK_BODY_MAX}
+            {feedbackTextLength(draft.body)}/{FEEDBACK_TEXT_MAX}
             {pendingUploads > 0
               ? ` · uploading ${pendingUploads} image${pendingUploads > 1 ? "s" : ""}...`
               : " · draft saved on this device"}

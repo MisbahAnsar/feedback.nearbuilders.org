@@ -1,6 +1,7 @@
 import { BAD_REQUEST, FORBIDDEN, NOT_FOUND, UNAUTHORIZED } from "every-plugin/errors";
 import { oc } from "every-plugin/orpc";
 import { z } from "every-plugin/zod";
+import { FEEDBACK_TEXT_MAX, feedbackTextLength } from "./lib/feedback-body";
 
 const ErrorTestKindSchema = z.enum([
   "unauthorized",
@@ -455,11 +456,17 @@ export const ProjectSearchResultSchema = z.object({
 
 export type ProjectSearchResult = z.infer<typeof ProjectSearchResultSchema>;
 
+const FeedbackBodySchema = z
+  .string()
+  .refine((body) => feedbackTextLength(body) <= FEEDBACK_TEXT_MAX, {
+    message: `Feedback can be at most ${FEEDBACK_TEXT_MAX} characters, not counting images`,
+  });
+
 const PostFeedbackInputSchema = z
   .object({
     id: z.string(),
     format: RoundFeedbackFormatSchema,
-    body: z.string().max(5000).optional(),
+    body: FeedbackBodySchema.optional(),
     url: z.string().url("Must be a valid URL").optional(),
   })
   .refine((v) => v.format !== "written" || !!v.body?.trim(), {
@@ -474,7 +481,7 @@ const PostFeedbackInputSchema = z
 const EditFeedbackInputSchema = z.object({
   id: z.string(),
   feedbackId: z.uuid(),
-  body: z.string().max(5000).optional(),
+  body: FeedbackBodySchema.optional(),
   url: z.string().url("Must be a valid URL").optional(),
 });
 
