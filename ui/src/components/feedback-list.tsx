@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useApiClient } from "@/app";
 import { Button, ConfirmDialog, Input, MarkdownEditor } from "@/components";
@@ -8,13 +8,14 @@ import { FeedbackContent } from "@/components/feedback-content";
 import { StarBadge } from "@/components/feedback-star-badge";
 import { FeedbackStatusBadge } from "@/components/feedback-status-badge";
 import { FEEDBACK_TEXT_MAX, feedbackTextLength, hasUnuploadedImage } from "@/lib/feedback-body";
+import { applyFeedbackEditDraft, canSaveFeedbackEdit, isOwnFeedback } from "@/lib/feedback-edit";
 import { type FeedbackEntry, invalidateFeedbackQueries } from "@/lib/queries/feedback";
 import { invalidateParticipationQueries } from "@/lib/queries/participation";
 
 interface FeedbackListProps<T extends FeedbackEntry> {
   roundId: string;
   entries: T[];
-  currentAccountId: string | null;
+  currentAccountIds: string[];
   canDelete: boolean;
   renderFooter?: (entry: T) => ReactNode;
 }
@@ -22,7 +23,7 @@ interface FeedbackListProps<T extends FeedbackEntry> {
 export function FeedbackList<T extends FeedbackEntry>({
   roundId,
   entries,
-  currentAccountId,
+  currentAccountIds,
   canDelete,
   renderFooter,
 }: FeedbackListProps<T>) {
@@ -32,6 +33,8 @@ export function FeedbackList<T extends FeedbackEntry>({
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [pendingUploads, setPendingUploads] = useState(0);
+  const originalDraft = useRef("");
+  const editOpenedAt = useRef(0);
 
   const editMutation = useMutation({
     mutationFn: (entry: FeedbackEntry) =>
@@ -49,8 +52,17 @@ export function FeedbackList<T extends FeedbackEntry>({
   });
 
   const startEdit = (entry: FeedbackEntry) => {
-    setDraft((entry.format === "written" ? entry.body : entry.url) ?? "");
+    const next = (entry.format === "written" ? entry.body : entry.url) ?? "";
+    originalDraft.current = next;
+    editOpenedAt.current = Date.now();
+    setDraft(next);
+    setPendingUploads(0);
     setEditId(entry.id);
+  };
+
+  const stopEdit = () => {
+    setEditId(null);
+    setPendingUploads(0);
   };
 
   const deleteMutation = useMutation({
@@ -71,7 +83,7 @@ export function FeedbackList<T extends FeedbackEntry>({
         data-testid="feedback-list"
       >
         {entries.map((entry) => {
-          const isOwn = entry.authorAccountId === currentAccountId;
+          const isOwn = isOwnFeedback(entry.authorAccountId, currentAccountIds);
           return (
             <li
               key={entry.id}
@@ -117,7 +129,16 @@ export function FeedbackList<T extends FeedbackEntry>({
                     <MarkdownEditor
                       aria-label="Edit feedback"
                       value={draft}
-                      onChange={setDraft}
+                      onChange={(next) =>
+                        setDraft(
+                          applyFeedbackEditDraft(
+                            draft,
+                            next,
+                            originalDraft.current,
+                            editOpenedAt.current,
+                          ),
+                        )
+                      }
                       maxLength={FEEDBACK_TEXT_MAX}
                       measureLength={feedbackTextLength}
                       onPendingUploadsChange={setPendingUploads}
@@ -135,25 +156,34 @@ export function FeedbackList<T extends FeedbackEntry>({
                       variant="ghost"
                       size="sm"
                       disabled={editMutation.isPending}
-                      onClick={() => setEditId(null)}
+                      onClick={stopEdit}
                     >
                       Cancel
                     </Button>
                     <Button
                       size="sm"
+                      data-testid="save-feedback-edit"
                       disabled={
-                        !draft.trim() ||
-                        pendingUploads > 0 ||
-                        editMutation.isPending ||
-                        (entry.format === "written" &&
-                          (feedbackTextLength(draft) > FEEDBACK_TEXT_MAX ||
-                            hasUnuploadedImage(draft)))
+                        !canSaveFeedbackEdit({
+                          draft,
+                          format: entry.format,
+                          pendingUploads,
+                          isPending: editMutation.isPending,
+                        })
                       }
                       onClick={() => editMutation.mutate(entry)}
                     >
                       Save
                     </Button>
                   </div>
+                  {entry.format === "written" &&
+                    pendingUploads === 0 &&
+                    hasUnuploadedImage(draft) && (
+                      <p role="alert" className="text-xs text-destructive">
+                        An image didn't finish uploading (outlined in red). Remove it or paste it
+                        again before saving.
+                      </p>
+                    )}
                 </div>
               ) : (
                 <FeedbackContent entry={entry} />
