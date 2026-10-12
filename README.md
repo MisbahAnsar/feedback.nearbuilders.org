@@ -44,6 +44,7 @@ All endpoints are under `/api/v1`. Open rounds and leaderboards are public; ever
 | `GET` | `/rounds/{id}/join` | Whether you have joined. |
 | `GET` | `/rounds/joined` | Rounds you have joined. |
 | `GET` | `/rounds/{id}/participants` | Participants, for the owner, admins and joined testers. |
+| `GET` | `/rounds/{id}/testers` | Owning organization or admin: everyone who posted feedback, with their Telegram handle and counts by status, for reviewing tester by tester. |
 | `POST` | `/rounds/{id}/invite` | Owner: notify the testers of an earlier round of the same project. |
 | `POST` | `/rounds/{id}/feedback` | Joined tester: post written feedback or a recorded-session link while the round is open. |
 | `GET` | `/rounds/{id}/feedback` | Read a round's feedback, newest first, cursor-paged and filterable by `status` and `author`. |
