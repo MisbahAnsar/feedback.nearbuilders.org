@@ -7,7 +7,7 @@ import { Button, ConfirmDialog, Input, MarkdownEditor } from "@/components";
 import { FeedbackContent } from "@/components/feedback-content";
 import { StarBadge } from "@/components/feedback-star-badge";
 import { FeedbackStatusBadge } from "@/components/feedback-status-badge";
-import { FEEDBACK_TEXT_MAX, feedbackTextLength } from "@/lib/feedback-body";
+import { FEEDBACK_TEXT_MAX, feedbackTextLength, hasUnuploadedImage } from "@/lib/feedback-body";
 import { type FeedbackEntry, invalidateFeedbackQueries } from "@/lib/queries/feedback";
 import { invalidateParticipationQueries } from "@/lib/queries/participation";
 
@@ -141,7 +141,14 @@ export function FeedbackList<T extends FeedbackEntry>({
                     </Button>
                     <Button
                       size="sm"
-                      disabled={!draft.trim() || pendingUploads > 0 || editMutation.isPending}
+                      disabled={
+                        !draft.trim() ||
+                        pendingUploads > 0 ||
+                        editMutation.isPending ||
+                        (entry.format === "written" &&
+                          (feedbackTextLength(draft) > FEEDBACK_TEXT_MAX ||
+                            hasUnuploadedImage(draft)))
+                      }
                       onClick={() => editMutation.mutate(entry)}
                     >
                       Save

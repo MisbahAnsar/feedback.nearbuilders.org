@@ -39,6 +39,17 @@ export interface RoundParticipantRecord {
   feedbackCount: number;
 }
 
+export interface FeedbackAuthorRecord {
+  accountId: string;
+  feedbackCount: number;
+  unresolvedCount: number;
+  resolvedCount: number;
+  dismissedCount: number;
+  starredCount: number;
+  firstPostedAt: string;
+  lastPostedAt: string;
+}
+
 export interface RoundSettingsPatch {
   readme?: string;
   /** New banner URL, or null to remove it. */
@@ -301,6 +312,8 @@ export interface RoundsService {
   addFeedbackNote(note: NewFeedbackNote): Promise<FeedbackNoteRecord>;
   listFeedbackNotes(feedbackIds: string[]): Promise<FeedbackNoteRecord[]>;
   listParticipants(roundId: string): Promise<RoundParticipantRecord[]>;
+  /** Everyone who posted in the round, with their submission counts by status. */
+  listFeedbackAuthors(roundId: string): Promise<FeedbackAuthorRecord[]>;
   getCreditCandidates(roundId: string): Promise<CreditCandidate[]>;
   closeRound(roundId: string, credits: CloseRoundCreditInput[]): Promise<RoundDetailRecord>;
   listRoundCredits(roundId: string): Promise<RoundCreditRecord[]>;
@@ -991,6 +1004,37 @@ export const RoundsLive = Layer.effect(
             ...row,
             joinedAt:
               row.joinedAt instanceof Date ? row.joinedAt.toISOString() : String(row.joinedAt),
+          }));
+        } catch (error) {
+          throw toOrpcError(error);
+        }
+      },
+
+      listFeedbackAuthors: async (roundId) => {
+        try {
+          const countWhere = (condition: ReturnType<typeof sql>) =>
+            sql<number>`count(*) filter (where ${condition})`.mapWith(Number);
+          const rows = await db
+            .select({
+              accountId: roundFeedbackTable.authorAccountId,
+              feedbackCount: count(roundFeedbackTable.id),
+              unresolvedCount: countWhere(sql`${roundFeedbackTable.status} = 'unresolved'`),
+              resolvedCount: countWhere(sql`${roundFeedbackTable.status} = 'resolved'`),
+              dismissedCount: countWhere(sql`${roundFeedbackTable.status} = 'dismissed'`),
+              starredCount: countWhere(sql`${roundFeedbackTable.starredAt} is not null`),
+              firstPostedAt: sql<string>`min(${roundFeedbackTable.createdAt})`,
+              lastPostedAt: sql<string>`max(${roundFeedbackTable.createdAt})`,
+            })
+            .from(roundFeedbackTable)
+            .where(eq(roundFeedbackTable.roundId, roundId))
+            .groupBy(roundFeedbackTable.authorAccountId)
+            .orderBy(desc(sql`max(${roundFeedbackTable.createdAt})`));
+          const iso = (value: unknown) =>
+            new Date(value instanceof Date ? value : String(value)).toISOString();
+          return rows.map((row) => ({
+            ...row,
+            firstPostedAt: iso(row.firstPostedAt),
+            lastPostedAt: iso(row.lastPostedAt),
           }));
         } catch (error) {
           throw toOrpcError(error);

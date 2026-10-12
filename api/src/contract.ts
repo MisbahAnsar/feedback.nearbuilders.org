@@ -1,7 +1,12 @@
 import { BAD_REQUEST, FORBIDDEN, NOT_FOUND, UNAUTHORIZED } from "every-plugin/errors";
 import { oc } from "every-plugin/orpc";
 import { z } from "every-plugin/zod";
-import { FEEDBACK_TEXT_MAX, feedbackTextLength } from "./lib/feedback-body";
+import {
+  FEEDBACK_BODY_RAW_MAX,
+  FEEDBACK_TEXT_MAX,
+  feedbackTextLength,
+  hasUnuploadedImage,
+} from "./lib/feedback-body";
 
 const ErrorTestKindSchema = z.enum([
   "unauthorized",
@@ -139,6 +144,21 @@ export const RoundParticipantSchema = z.object({
 });
 
 export type RoundParticipant = z.infer<typeof RoundParticipantSchema>;
+
+export const FeedbackAuthorSchema = z.object({
+  accountId: z.string(),
+  /** Telegram handle without `@`, from the tester's nearbuilders.org or NEAR Social profile. */
+  telegramHandle: z.string().nullable(),
+  feedbackCount: z.number().int().nonnegative(),
+  unresolvedCount: z.number().int().nonnegative(),
+  resolvedCount: z.number().int().nonnegative(),
+  dismissedCount: z.number().int().nonnegative(),
+  starredCount: z.number().int().nonnegative(),
+  firstPostedAt: z.string(),
+  lastPostedAt: z.string(),
+});
+
+export type FeedbackAuthor = z.infer<typeof FeedbackAuthorSchema>;
 
 export const RoundFeedbackStatusSchema = z.enum(["unresolved", "resolved", "dismissed"]);
 
@@ -458,8 +478,12 @@ export type ProjectSearchResult = z.infer<typeof ProjectSearchResultSchema>;
 
 const FeedbackBodySchema = z
   .string()
+  .max(FEEDBACK_BODY_RAW_MAX, "Feedback is too large")
   .refine((body) => feedbackTextLength(body) <= FEEDBACK_TEXT_MAX, {
     message: `Feedback can be at most ${FEEDBACK_TEXT_MAX} characters, not counting images`,
+  })
+  .refine((body) => !hasUnuploadedImage(body), {
+    message: "An image didn't finish uploading. Remove it or paste it again, then post.",
   });
 
 const PostFeedbackInputSchema = z
@@ -809,6 +833,18 @@ export const contract = oc.router({
       }),
     )
     .output(z.array(RoundFeedbackSchema))
+    .errors({ UNAUTHORIZED, FORBIDDEN, NOT_FOUND }),
+
+  listFeedbackAuthors: oc
+    .route({
+      method: "GET",
+      path: "/rounds/{id}/testers",
+      summary: "Everyone who posted feedback in a round, with counts by status",
+      description:
+        "Round managers only. One row per tester, newest activity first, with their Telegram handle when one is linked.",
+    })
+    .input(z.object({ id: z.string() }))
+    .output(z.array(FeedbackAuthorSchema))
     .errors({ UNAUTHORIZED, FORBIDDEN, NOT_FOUND }),
 
   listParticipants: oc
