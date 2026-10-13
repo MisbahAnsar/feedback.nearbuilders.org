@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyFeedbackEditDraft, canSaveFeedbackEdit, isOwnFeedback } from "./feedback-edit";
+import { canSaveFeedbackEdit, isOwnFeedback } from "./feedback-edit";
 
 describe("isOwnFeedback", () => {
   it("matches any linked wallet, not only the active one", () => {
@@ -41,22 +41,5 @@ describe("canSaveFeedbackEdit", () => {
         isPending: false,
       }),
     ).toBe(false);
-  });
-});
-
-describe("applyFeedbackEditDraft", () => {
-  const original = "Submitted writeup from ballzz.near.";
-
-  it("keeps the submitted body when the editor hydrates with an empty doc", () => {
-    expect(applyFeedbackEditDraft(original, "", original, 1_000, 1_100)).toBe(original);
-  });
-
-  it("keeps the submitted body when hydration rewrites stored images as file data", () => {
-    const next = `${original}\n\n![shot](blob:https://localhost/1)`;
-    expect(applyFeedbackEditDraft(original, next, original, 1_000, 1_100)).toBe(original);
-  });
-
-  it("accepts a real edit after the hydration window", () => {
-    expect(applyFeedbackEditDraft(original, "changed", original, 1_000, 1_600)).toBe("changed");
   });
 });

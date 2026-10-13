@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "lucide-react";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 import { useApiClient } from "@/app";
 import { Button, ConfirmDialog, Input, MarkdownEditor } from "@/components";
@@ -8,7 +8,7 @@ import { FeedbackContent } from "@/components/feedback-content";
 import { StarBadge } from "@/components/feedback-star-badge";
 import { FeedbackStatusBadge } from "@/components/feedback-status-badge";
 import { FEEDBACK_TEXT_MAX, feedbackTextLength, hasUnuploadedImage } from "@/lib/feedback-body";
-import { applyFeedbackEditDraft, canSaveFeedbackEdit, isOwnFeedback } from "@/lib/feedback-edit";
+import { canSaveFeedbackEdit, isOwnFeedback } from "@/lib/feedback-edit";
 import { type FeedbackEntry, invalidateFeedbackQueries } from "@/lib/queries/feedback";
 import { invalidateParticipationQueries } from "@/lib/queries/participation";
 
@@ -33,8 +33,6 @@ export function FeedbackList<T extends FeedbackEntry>({
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [pendingUploads, setPendingUploads] = useState(0);
-  const originalDraft = useRef("");
-  const editOpenedAt = useRef(0);
 
   const editMutation = useMutation({
     mutationFn: (entry: FeedbackEntry) =>
@@ -52,10 +50,7 @@ export function FeedbackList<T extends FeedbackEntry>({
   });
 
   const startEdit = (entry: FeedbackEntry) => {
-    const next = (entry.format === "written" ? entry.body : entry.url) ?? "";
-    originalDraft.current = next;
-    editOpenedAt.current = Date.now();
-    setDraft(next);
+    setDraft((entry.format === "written" ? entry.body : entry.url) ?? "");
     setPendingUploads(0);
     setEditId(entry.id);
   };
@@ -129,16 +124,7 @@ export function FeedbackList<T extends FeedbackEntry>({
                     <MarkdownEditor
                       aria-label="Edit feedback"
                       value={draft}
-                      onChange={(next) =>
-                        setDraft(
-                          applyFeedbackEditDraft(
-                            draft,
-                            next,
-                            originalDraft.current,
-                            editOpenedAt.current,
-                          ),
-                        )
-                      }
+                      onChange={setDraft}
                       maxLength={FEEDBACK_TEXT_MAX}
                       measureLength={feedbackTextLength}
                       onPendingUploadsChange={setPendingUploads}
