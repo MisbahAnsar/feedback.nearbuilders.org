@@ -52,6 +52,7 @@ import {
   needsTeamCheck,
   type RoundActor,
 } from "./services/round-access";
+import { isRoundExpired } from "./services/round-liveness";
 import {
   type RoundDetailRecord,
   RoundsLive,
@@ -400,7 +401,7 @@ export default createPlugin.withPlugins<PluginsClient>()({
      * though the round is still status "open" — the owner closes it manually for credits.
      */
     const assertRoundNotExpired = (round: { endsAt: string | null }) => {
-      if (round.endsAt && Date.parse(round.endsAt) <= Date.now()) {
+      if (isRoundExpired(round)) {
         throw new ORPCError("BAD_REQUEST", { message: "This round has expired" });
       }
     };
