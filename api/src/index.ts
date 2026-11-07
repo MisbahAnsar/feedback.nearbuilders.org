@@ -32,6 +32,7 @@ import {
   NotificationsTag,
 } from "./services/notifications";
 import { type OrganizationPrincipal, orgKeyOrganizationId } from "./services/org-key";
+import { projectIdMismatchesRegistry } from "./services/project-id";
 import type {
   ProjectRecord,
   ProjectWithRounds as ProjectWithRoundsRecord,
@@ -524,6 +525,19 @@ export default createPlugin.withPlugins<PluginsClient>()({
             if (Number.isNaN(endsAtMs) || endsAtMs <= Date.now()) {
               throw new ORPCError("BAD_REQUEST", {
                 message: "The expiration time must be in the future",
+              });
+            }
+          }
+          // The id is stored and later used to look the project up, so it must belong to the
+          // slug. Best effort like the rest of the registry integration: an unreachable
+          // registry or an unknown slug does not block the request.
+          if (input.projectId) {
+            const registered = await getRuntime().projectsLookup.resolveBySlug(
+              input.projectSlug.trim(),
+            );
+            if (projectIdMismatchesRegistry(registered, input.projectId)) {
+              throw new ORPCError("BAD_REQUEST", {
+                message: "That project id does not match the project slug",
               });
             }
           }
