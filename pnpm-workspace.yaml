@@ -112,3 +112,5 @@ permissions:
     skills: true
   everything-dev:
     skills: true
+  lefthook:
+    build: false
