@@ -94,6 +94,17 @@ export const ProjectWithRoundsSchema = ProjectSchema.extend({
 
 export type ProjectWithRounds = z.infer<typeof ProjectWithRoundsSchema>;
 
+/** Upper bound on the winners a round owner can mark. */
+export const MAX_ROUND_WINNERS = 50;
+
+/** A winner's account id: lowercase NEAR/Telegram-style id, safe to use as a profile link segment. */
+export const RoundWinnerIdSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/, "Not a valid account id")
+  .max(64);
+
 export const PublicProjectOmittedFields = {
   ownerOrgId: true,
   managingTeamId: true,
@@ -136,6 +147,8 @@ export const RoundSchema = z.object({
   legionOnly: z.boolean(),
   /** Optional expiration: joining and posting are blocked once this passes. */
   endsAt: z.string().nullable(),
+  /** Ranked account ids the round owner marked as winners; empty until they do. */
+  winners: z.array(z.string()),
   status: RoundStatusSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -642,7 +655,7 @@ export const contract = oc.router({
     .route({
       method: "PATCH",
       path: "/rounds/{id}/settings",
-      summary: "Change a round's privacy, Legion gate and expiration",
+      summary: "Change a round's privacy, Legion gate, expiration and winners",
     })
     .input(
       z.object({
@@ -651,6 +664,8 @@ export const contract = oc.router({
         legionOnly: z.boolean().optional(),
         /** New expiration, or null to remove it. */
         endsAt: z.iso.datetime().nullable().optional(),
+        /** Ranked winners, best first. Replaces the list; an empty array clears it. */
+        winners: z.array(RoundWinnerIdSchema).max(MAX_ROUND_WINNERS).optional(),
       }),
     )
     .output(RoundSchema)
