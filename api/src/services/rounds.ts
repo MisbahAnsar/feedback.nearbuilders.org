@@ -783,13 +783,20 @@ export const RoundsLive = Layer.effect(
 
       listRounds: async (filter) => {
         try {
+          // `open` means still accepting feedback: past endsAt stays status=open in
+          // the DB until the owner closes for credits, but the Open tab must not
+          // list those as live (the shared roundIsLiveSql rule, same as the owner summary).
           const joined = await db
             .select({ round: roundsTable, organizationId: projectsTable.ownerOrgId })
             .from(roundsTable)
             .innerJoin(projectsTable, eq(roundsTable.projectRecordId, projectsTable.id))
             .where(
               and(
-                filter?.status ? eq(roundsTable.status, filter.status) : undefined,
+                filter?.status === "open"
+                  ? roundIsLiveSql
+                  : filter?.status
+                    ? eq(roundsTable.status, filter.status)
+                    : undefined,
                 filter?.organizationId
                   ? eq(projectsTable.ownerOrgId, filter.organizationId)
                   : undefined,
