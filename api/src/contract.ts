@@ -78,8 +78,15 @@ export const ProjectIdentitySchema = z
 
 export type ProjectIdentity = z.infer<typeof ProjectIdentitySchema>;
 
+/** An organization granted co-management of a project's rounds (#279). */
+export const PartnerSchema = z.object({
+  organizationId: z.string(),
+  slug: z.string().nullable(),
+});
+
 export const ProjectWithRoundsSchema = ProjectSchema.extend({
   identity: ProjectIdentitySchema,
+  partners: z.array(PartnerSchema),
   rounds: z.array(
     z.object({
       id: z.string(),
@@ -515,6 +522,8 @@ export type NearBuildersProject = z.infer<typeof NearBuildersProjectSchema>;
 
 export const ProjectDetailSchema = ProjectWithRoundsSchema.extend({
   canManage: z.boolean(),
+  /** Owner-org admins and site admins only (#279): may manage the partner list. */
+  canManagePartners: z.boolean(),
 });
 
 export type ProjectDetail = z.infer<typeof ProjectDetailSchema>;
@@ -714,6 +723,23 @@ export const contract = oc.router({
   setProjectManagingTeam: oc
     .route({ method: "POST", path: "/projects/{id}/managing-team" })
     .input(z.object({ id: z.string(), teamId: z.string().min(1).nullable() }))
+    .output(ProjectWithRoundsSchema)
+    .errors({ UNAUTHORIZED, FORBIDDEN, BAD_REQUEST, NOT_FOUND }),
+
+  addProjectPartner: oc
+    .route({ method: "POST", path: "/projects/{id}/partners" })
+    .input(
+      z.object({
+        id: z.string(),
+        organizationSlug: z.string().trim().min(1, "An organization slug is required").max(200),
+      }),
+    )
+    .output(ProjectWithRoundsSchema)
+    .errors({ UNAUTHORIZED, FORBIDDEN, BAD_REQUEST, NOT_FOUND }),
+
+  removeProjectPartner: oc
+    .route({ method: "DELETE", path: "/projects/{id}/partners/{organizationSlug}" })
+    .input(z.object({ id: z.string(), organizationSlug: z.string().trim().min(1).max(200) }))
     .output(ProjectWithRoundsSchema)
     .errors({ UNAUTHORIZED, FORBIDDEN, BAD_REQUEST, NOT_FOUND }),
 
