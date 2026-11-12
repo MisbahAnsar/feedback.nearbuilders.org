@@ -7,6 +7,7 @@ import { Button, Card, Chip, PageHeader } from "@/components";
 import { useSwitchOrganization } from "@/components/layout/use-switch-organization";
 import { formatDate } from "@/lib/format-date";
 import { pageHead } from "@/lib/page-title";
+import { organizationsQueryOptions } from "@/lib/queries/organizations";
 
 type AuthClientType = import("@/app").AuthClient;
 type UserInvitationsResponse = Awaited<
@@ -20,14 +21,11 @@ export const Route = createFileRoute("/_authenticated/_dashboard/orgs/")({
     await context.queryClient.ensureQueryData(
       sessionQueryOptions(context.authClient, context.session),
     );
-    await context.queryClient.ensureQueryData({
-      queryKey: ["organizations"],
-      queryFn: async () => {
-        const { data } = await context.authClient.organization.list();
-        return (data || []) as Organization[];
-      },
-      staleTime: 30 * 1000,
-    });
+    // The SSR auth client carries no cookies, so this fetch would always fail
+    // server-side; let the browser fetch it with the session after hydration.
+    if (typeof window !== "undefined") {
+      await context.queryClient.ensureQueryData(organizationsQueryOptions(context.authClient));
+    }
     await context.queryClient.ensureQueryData({
       queryKey: ["user-invitations"],
       queryFn: async (): Promise<UserInvitationItem[]> => {
@@ -50,14 +48,8 @@ function OrganizationsList() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: session } = useQuery<SessionData | null>(sessionQueryOptions(auth));
-  const { data: organizations, isLoading } = useQuery({
-    queryKey: ["organizations"],
-    queryFn: async () => {
-      const { data } = await auth.organization.list();
-      return (data || []) as Organization[];
-    },
-    staleTime: 30 * 1000,
-  });
+  const organizationsQuery = useQuery(organizationsQueryOptions(auth));
+  const { data: organizations = [] } = organizationsQuery;
 
   const { data: userInvitations = [] } = useQuery({
     queryKey: ["user-invitations"],
@@ -193,7 +185,7 @@ function OrganizationsList() {
           </section>
         )}
 
-        {isLoading ? (
+        {organizationsQuery.isPending ? (
           <div className="grid gap-6 md:grid-cols-2">
             {[1, 2].map((n) => (
               <Card key={n} className="p-6 space-y-5">
@@ -212,6 +204,24 @@ function OrganizationsList() {
               </Card>
             ))}
           </div>
+        ) : organizationsQuery.isError ? (
+          <Card className="p-10 text-center space-y-4 items-center">
+            <Building2 className="h-10 w-10 mx-auto text-muted-foreground" />
+            <p className="text-base font-semibold text-foreground">
+              Couldn't load your organizations.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {organizationsQuery.error instanceof Error
+                ? organizationsQuery.error.message
+                : "Something went wrong. Your session is fine — retry the fetch."}
+            </p>
+            <Button
+              onClick={() => organizationsQuery.refetch()}
+              disabled={organizationsQuery.isFetching}
+            >
+              {organizationsQuery.isFetching ? "retrying..." : "retry"}
+            </Button>
+          </Card>
         ) : orgs.length === 0 ? (
           <Card className="p-10 text-center space-y-4 items-center">
             <Building2 className="h-10 w-10 mx-auto text-muted-foreground" />
