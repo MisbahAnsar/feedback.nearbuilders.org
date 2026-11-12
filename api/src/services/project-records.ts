@@ -75,6 +75,12 @@ export interface ProjectRecordsService {
   /** Delegates round management to a team, or back to every org member with null. */
   setManagingTeam(id: string, teamId: string | null): Promise<ProjectRecord | null>;
   /**
+   * Transfers the project to another organization, or back to creator ownership with null.
+   * A cross-org move clears the team delegation — the old org's team must not gate the new
+   * owner's members; the new owner re-delegates if wanted.
+   */
+  setProjectOwner(id: string, ownerOrgId: string | null): Promise<ProjectRecord | null>;
+  /**
    * Grants a principal management of the project's rounds (#279). Idempotent;
    * v1 writes org principals with the "manage" permission.
    */
@@ -419,6 +425,32 @@ export const ProjectRecordsLive = Layer.effect(
           const [row] = await db
             .update(projectsTable)
             .set({ managingTeamId: teamId, updatedAt: new Date() })
+            .where(eq(projectsTable.id, id))
+            .returning();
+          if (!row) return null;
+          const [record] = await attachGrants(db, [toProjectRecord(row)]);
+          return record ?? null;
+        } catch (error) {
+          throw toOrpcError(error);
+        }
+      },
+
+      setProjectOwner: async (id, ownerOrgId) => {
+        try {
+          const [current] = await db
+            .select({ ownerOrgId: projectsTable.ownerOrgId })
+            .from(projectsTable)
+            .where(eq(projectsTable.id, id))
+            .limit(1);
+          if (!current) return null;
+          const crossOrg = current.ownerOrgId !== ownerOrgId;
+          const [row] = await db
+            .update(projectsTable)
+            .set({
+              ownerOrgId,
+              ...(crossOrg ? { managingTeamId: null } : {}),
+              updatedAt: new Date(),
+            })
             .where(eq(projectsTable.id, id))
             .returning();
           if (!row) return null;

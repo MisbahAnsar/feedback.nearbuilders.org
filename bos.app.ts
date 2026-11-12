@@ -30,7 +30,7 @@ export default App({
   api: {
     path: "api",
     variables: {
-      preferredPartnerSlugs: ["nearlegion"],
+      preferredPartnerSlugs: ["near-legion"],
     },
     secrets: [
       "API_DATABASE_URL",

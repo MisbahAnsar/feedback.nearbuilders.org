@@ -887,6 +887,58 @@ export default createPlugin.withPlugins<PluginsClient>()({
           return withIdentity(updated);
         }),
 
+      setProjectOwner: builder.setProjectOwner
+        .use(requireAuthOrApiKey)
+        .handler(async ({ input, context, errors }) => {
+          assertNotOrgKey(context);
+          const project = await getRuntime().projectRecords.getProjectWithRounds(input.id);
+          if (!project) {
+            throw errors.NOT_FOUND({
+              message: "Project not found",
+              data: { resource: "project", resourceId: input.id },
+            });
+          }
+          const actor: RoundActor = {
+            activeOrganizationId: context.organization?.activeOrganizationId,
+            accountId: context.near?.primaryAccountId,
+            accountIds: linkedAccountIds(context as LinkedAccountsContext),
+            orgRole: context.organization?.member?.role,
+          };
+          if (!isSiteAdmin(context) && !canManageProject(project, actor)) {
+            throw new ORPCError("FORBIDDEN", {
+              message: "Only the project owner or an admin can transfer ownership",
+            });
+          }
+          const resolution = await getRuntime().orgAccess.resolveBySlug(
+            context as unknown as Record<string, unknown>,
+            input.organizationSlug,
+          );
+          if (resolution === "unverifiable") {
+            throw new ORPCError("BAD_REQUEST", {
+              message: "Couldn't verify that organization right now, try again",
+            });
+          }
+          if (!resolution) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: "No organization found with that slug",
+            });
+          }
+          if (resolution.status !== "active") {
+            throw new ORPCError("BAD_REQUEST", {
+              message: "That organization hasn't been approved yet",
+            });
+          }
+          await getRuntime().projectRecords.setProjectOwner(project.id, resolution.organizationId);
+          const updated = await getRuntime().projectRecords.getProjectWithRounds(project.id);
+          if (!updated) {
+            throw errors.NOT_FOUND({
+              message: "Project not found",
+              data: { resourceId: input.id },
+            });
+          }
+          return withIdentity(updated);
+        }),
+
       addProjectPartner: builder.addProjectPartner
         .use(requireAuthOrApiKey)
         .handler(async ({ input, context, errors }) => {

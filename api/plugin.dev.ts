@@ -15,7 +15,7 @@ export default {
   config: {
     // child-owned-start
     variables: {
-      preferredPartnerSlugs: ["nearlegion"],
+      preferredPartnerSlugs: ["near-legion"],
     },
     // child-owned-end
     secrets: {

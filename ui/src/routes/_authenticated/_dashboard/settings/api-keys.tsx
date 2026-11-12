@@ -14,6 +14,7 @@ import {
   EmptyState,
   PageHeader,
 } from "@/components";
+import { formatDateTime } from "@/lib/format-date";
 import { pageHead } from "@/lib/page-title";
 
 export const Route = createFileRoute("/_authenticated/_dashboard/settings/api-keys")({
@@ -150,8 +151,8 @@ function ApiKeysSettings() {
                 </div>
               </div>
               <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                <div>created {new Date(key.createdAt).toLocaleString()}</div>
-                {key.expiresAt && <div>expires {new Date(key.expiresAt).toLocaleString()}</div>}
+                <div>created {formatDateTime(key.createdAt)}</div>
+                {key.expiresAt && <div>expires {formatDateTime(key.expiresAt)}</div>}
               </div>
               <div className="flex gap-2">
                 <Button

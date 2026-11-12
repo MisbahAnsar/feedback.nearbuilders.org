@@ -60,7 +60,7 @@ beforeEach(() => {
   authListTeamMembers.mockResolvedValue([]);
   authListOrganizations.mockReset();
   authListOrganizations.mockResolvedValue([
-    { id: "nearlegion-org-1", name: "NearLegion", slug: "nearlegion", status: "active" },
+    { id: "nearlegion-org-1", name: "NearLegion", slug: "near-legion", status: "active" },
     PARTNER,
   ]);
 });
@@ -252,7 +252,7 @@ describe("partner management (#279)", () => {
   it("lists configured partner suggestions with the org's display name", async () => {
     const viewer = await getPluginClient(nearAuthedContext("suggestion-viewer.near"));
     const { partners } = await viewer.listPartnerSuggestions();
-    expect(partners).toEqual([{ slug: "nearlegion", name: "NearLegion", active: true }]);
+    expect(partners).toEqual([{ slug: "near-legion", name: "NearLegion", active: true }]);
   });
 
   it("refuses partner members when they try to manage the partnership", async () => {

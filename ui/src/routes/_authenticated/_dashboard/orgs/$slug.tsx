@@ -37,6 +37,7 @@ import {
 } from "@/components";
 import { useSwitchOrganization } from "@/components/layout/use-switch-organization";
 import { OrgTeams } from "@/components/org-teams";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 import { pageHead } from "@/lib/page-title";
 
 type AuthClientType = import("@/app").AuthClient;
@@ -383,9 +384,7 @@ function OrganizationDetail() {
           <InfoRow label="members" value={String(members.length)} />
           <InfoRow label="invites" value={String(pendingInvitationsCount)} />
           <InfoRow label="api keys" value={String(apiKeys.length)} />
-          {org.createdAt && (
-            <InfoRow label="created" value={new Date(org.createdAt).toLocaleDateString()} />
-          )}
+          {org.createdAt && <InfoRow label="created" value={formatDate(org.createdAt)} />}
         </div>
         <div className="flex flex-wrap gap-2">
           {!isActive && (
@@ -609,8 +608,8 @@ function OrganizationDetail() {
                     </div>
                   </div>
                   <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                    <div>created {new Date(key.createdAt).toLocaleString()}</div>
-                    {key.expiresAt && <div>expires {new Date(key.expiresAt).toLocaleString()}</div>}
+                    <div>created {formatDateTime(key.createdAt)}</div>
+                    {key.expiresAt && <div>expires {formatDateTime(key.expiresAt)}</div>}
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -810,7 +809,7 @@ function InvitationCard({
           </div>
         </div>
         <div className="text-xs text-muted-foreground">
-          expires {new Date(invitation.expiresAt).toLocaleString()}
+          expires {formatDateTime(invitation.expiresAt)}
         </div>
       </CardContent>
     </Card>

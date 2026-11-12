@@ -731,6 +731,12 @@ export const contract = oc.router({
     .output(ProjectWithRoundsSchema)
     .errors({ UNAUTHORIZED, FORBIDDEN, BAD_REQUEST, NOT_FOUND }),
 
+  setProjectOwner: oc
+    .route({ method: "POST", path: "/projects/{id}/owner" })
+    .input(z.object({ id: z.string(), organizationSlug: z.string().trim().min(1).max(200) }))
+    .output(ProjectWithRoundsSchema)
+    .errors({ UNAUTHORIZED, FORBIDDEN, BAD_REQUEST, NOT_FOUND }),
+
   addProjectPartner: oc
     .route({ method: "POST", path: "/projects/{id}/partners" })
     .input(

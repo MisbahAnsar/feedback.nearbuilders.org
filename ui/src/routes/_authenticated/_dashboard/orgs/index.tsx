@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { type Organization, type SessionData, sessionQueryOptions, useAuthClient } from "@/app";
 import { Button, Card, Chip, PageHeader } from "@/components";
 import { useSwitchOrganization } from "@/components/layout/use-switch-organization";
+import { formatDate } from "@/lib/format-date";
 import { pageHead } from "@/lib/page-title";
 
 type AuthClientType = import("@/app").AuthClient;
@@ -157,7 +158,7 @@ function OrganizationsList() {
                         invited as {invitation.role ?? "member"}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        expires {new Date(invitation.expiresAt).toLocaleDateString()}
+                        expires {formatDate(invitation.expiresAt)}
                       </div>
                     </div>
                   </div>
@@ -253,9 +254,7 @@ function OrganizationsList() {
                   </div>
 
                   <div className="rounded-[8px] border border-border bg-muted px-3.5 py-2.5 text-sm text-muted-foreground">
-                    {org.createdAt
-                      ? `created ${new Date(org.createdAt).toLocaleDateString()}`
-                      : "organization record"}
+                    {org.createdAt ? `created ${formatDate(org.createdAt)}` : "organization record"}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
