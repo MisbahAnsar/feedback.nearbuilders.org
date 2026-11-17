@@ -6,7 +6,7 @@ import { Context, Effect, Layer } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Database } from "@/db/layer";
 import { DatabaseLive, DatabaseTag } from "@/db/layer";
-import { activityOutbox, roundFeedback } from "@/db/schema";
+import { activityOutbox, roundCredits, roundFeedback, rounds as roundsTable } from "@/db/schema";
 import type { ActivityEmitter } from "@/services/activity-events";
 import {
   backoffMs,
@@ -827,6 +827,29 @@ describe("closing a round (#312)", () => {
       await expect(rounds.closeRound(round.id, [credit])).rejects.toThrow();
 
       expect(await db.select().from(activityOutbox)).toHaveLength(2);
+    });
+  });
+
+  it("stores the delivered event ids on the round and the credit so they can be retracted", async () => {
+    await withHarness(async (harness) => {
+      const { db, rounds } = harness;
+      const { round } = await openRoundWithFeedback(harness, "close-event-ids");
+      await rounds.closeRound(round.id, [credit]);
+
+      await createActivityOutboxWorker({ db, emitter: fakeEmitter() }).drain();
+
+      const sent = await db.select().from(activityOutbox);
+      const closedEventId = sent.find((row) => row.eventType === "round.closed")?.eventId;
+      const creditEventId = sent.find((row) => row.eventType === "credit.awarded")?.eventId;
+      expect(closedEventId).toBeTruthy();
+      expect(creditEventId).toBeTruthy();
+      const [stored] = await db.select().from(roundsTable).where(eq(roundsTable.id, round.id));
+      expect(stored?.closedActivityEventId).toBe(closedEventId);
+      const [storedCredit] = await db
+        .select()
+        .from(roundCredits)
+        .where(eq(roundCredits.roundId, round.id));
+      expect(storedCredit?.activityEventId).toBe(creditEventId);
     });
   });
 

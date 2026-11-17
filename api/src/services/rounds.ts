@@ -484,6 +484,8 @@ function roundClosedIntent(round: RoundRow): ActivityEmitIntent {
       projectSlug: round.projectSlug,
       title: round.title,
     },
+    subjectKind: "round_closed",
+    subjectId: round.id,
   };
 }
 
@@ -500,6 +502,7 @@ type CreditIntentInput = Pick<
 
 async function creditAwardedIntent(
   credit: CreditIntentInput,
+  creditId: string,
   isPrivate: boolean,
 ): Promise<ActivityEmitIntent> {
   const intent: ActivityEmitIntent = {
@@ -515,6 +518,8 @@ async function creditAwardedIntent(
       recordedCount: credit.recordedCount,
       summary: credit.summary,
     },
+    subjectKind: "credit",
+    subjectId: creditId,
   };
   return isPrivate ? redactPrivateEvent(intent) : intent;
 }
@@ -1289,7 +1294,7 @@ export const RoundsLive = Layer.effect(
                 });
               }
               const c = counts.get(credit.builderAccountId)!;
-              await tx
+              const [saved] = await tx
                 .insert(roundCreditsTable)
                 .values({
                   roundId,
@@ -1309,9 +1314,10 @@ export const RoundsLive = Layer.effect(
                     writtenCount: c.written,
                     recordedCount: c.recorded,
                   },
-                });
+                })
+                .returning({ id: roundCreditsTable.id });
 
-              if (credit.contributedMeaningfully) {
+              if (credit.contributedMeaningfully && saved) {
                 await enqueueActivity(
                   tx,
                   await creditAwardedIntent(
@@ -1324,6 +1330,7 @@ export const RoundsLive = Layer.effect(
                       recordedCount: c.recorded,
                       summary: credit.summary ?? null,
                     },
+                    saved.id,
                     round.isPrivate,
                   ),
                 );
