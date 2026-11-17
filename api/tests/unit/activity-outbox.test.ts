@@ -736,6 +736,9 @@ describe("backfilling accepted feedback", () => {
 describe("closing a round (#312)", () => {
   const credit = { builderAccountId: "tester.near", contributedMeaningfully: true };
 
+  const queuedEventTypes = async (db: Database) =>
+    (await db.select().from(activityOutbox)).map((row) => row.eventType);
+
   it("queues round.closed and credit.awarded in the outbox with the close", async () => {
     await withHarness(async (harness) => {
       const { db, rounds } = harness;
@@ -773,8 +776,7 @@ describe("closing a round (#312)", () => {
 
       await rounds.closeRound(round.id, [{ ...credit, contributedMeaningfully: false }]);
 
-      const queued = await db.select().from(activityOutbox);
-      expect(queued.map((row) => row.eventType)).toEqual(["round.closed"]);
+      expect(await queuedEventTypes(db)).toEqual(["round.closed"]);
     });
   });
 
@@ -785,8 +787,7 @@ describe("closing a round (#312)", () => {
 
       await rounds.closeRound(round.id, [credit, { ...credit, contributedMeaningfully: false }]);
 
-      const queued = await db.select().from(activityOutbox);
-      expect(queued.map((row) => row.eventType)).toEqual(["round.closed"]);
+      expect(await queuedEventTypes(db)).toEqual(["round.closed"]);
     });
   });
 

@@ -14,7 +14,8 @@
  * here; they are queued in the outbox inside the transaction that causes them
  * (see `./activity-outbox`). Submissions carry an idempotency key scoped to the
  * round, feedback, or credit, so a retry of the same logical event is
- * de-duplicated by the gateway (see docs/integration-guide.md in activity.nearbuilders.org).
+ * de-duplicated by the gateway (see docs/integration-guide.md in
+ * activity.nearbuilders.org).
  *
  * Wire plumbing (submit/listEvents/leaderboard/retract) lives in
  * `./activity-client`, the ported activity.nearbuilders.org reference client.
