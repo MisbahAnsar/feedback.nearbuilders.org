@@ -89,8 +89,6 @@ function fakeEmitter(overrides: Partial<ActivityEmitter> = {}): ActivityEmitter 
     submitRaw: vi.fn(async () => `event-${++n}`),
     emitRoundOpened: vi.fn(async () => null),
     emitFeedbackPosted: vi.fn(async () => null),
-    emitRoundClosed: vi.fn(async () => null),
-    emitCreditAwarded: vi.fn(async () => null),
     retract: vi.fn(async () => undefined),
     leaderboard: vi.fn(async () => null),
     endorsements: vi.fn(async () => null),
@@ -731,6 +729,129 @@ describe("backfilling accepted feedback", () => {
         (row) => row.operation === "retract",
       );
       expect(retraction).toMatchObject({ targetEventId: "event-1", reason: "feedback deleted" });
+    });
+  });
+});
+
+describe("closing a round (#312)", () => {
+  const credit = { builderAccountId: "tester.near", contributedMeaningfully: true };
+
+  it("queues round.closed and credit.awarded in the outbox with the close", async () => {
+    await withHarness(async (harness) => {
+      const { db, rounds } = harness;
+      const { round } = await openRoundWithFeedback(harness, "close-events");
+
+      await rounds.closeRound(round.id, [{ ...credit, summary: "Found the checkout bug" }]);
+
+      const queued = await db.select().from(activityOutbox);
+      expect(queued.map((row) => row.eventType).sort()).toEqual(["credit.awarded", "round.closed"]);
+      expect(queued.every((row) => row.status === "pending")).toBe(true);
+      expect(queued.find((row) => row.eventType === "round.closed")).toMatchObject({
+        actor: "owner.near",
+        idempotencyKey: `round.closed:${round.id}`,
+        payload: { roundId: round.id, projectSlug: "close-events", title: "Try it" },
+      });
+      expect(queued.find((row) => row.eventType === "credit.awarded")).toMatchObject({
+        actor: "tester.near",
+        idempotencyKey: `credit.awarded:${round.id}:tester.near`,
+        payload: {
+          roundId: round.id,
+          projectSlug: "close-events",
+          roundTitle: "Try it",
+          writtenCount: 1,
+          recordedCount: 0,
+          summary: "Found the checkout bug",
+        },
+      });
+    });
+  });
+
+  it("queues credit.awarded only for credits that contributed meaningfully", async () => {
+    await withHarness(async (harness) => {
+      const { db, rounds } = harness;
+      const { round } = await openRoundWithFeedback(harness, "close-no-credit");
+
+      await rounds.closeRound(round.id, [{ ...credit, contributedMeaningfully: false }]);
+
+      const queued = await db.select().from(activityOutbox);
+      expect(queued.map((row) => row.eventType)).toEqual(["round.closed"]);
+    });
+  });
+
+  it("uses the last entry when a builder is credited twice", async () => {
+    await withHarness(async (harness) => {
+      const { db, rounds } = harness;
+      const { round } = await openRoundWithFeedback(harness, "close-duplicate-credit");
+
+      await rounds.closeRound(round.id, [credit, { ...credit, contributedMeaningfully: false }]);
+
+      const queued = await db.select().from(activityOutbox);
+      expect(queued.map((row) => row.eventType)).toEqual(["round.closed"]);
+    });
+  });
+
+  it("keeps a private round's credit summary out of the queued event", async () => {
+    await withHarness(async (harness) => {
+      const { db, rounds } = harness;
+      const { round } = await openRoundWithFeedback(harness, "close-private", true);
+
+      await rounds.closeRound(round.id, [{ ...credit, summary: "Found the checkout bug" }]);
+
+      const queued = (await db.select().from(activityOutbox)).find(
+        (row) => row.eventType === "credit.awarded",
+      );
+      expect(JSON.stringify(queued)).not.toContain("Found the checkout bug");
+      expect(queued?.payload).not.toHaveProperty("summary");
+    });
+  });
+
+  it("queues nothing when a credit names someone who did not post", async () => {
+    await withHarness(async (harness) => {
+      const { db, rounds } = harness;
+      const { round } = await openRoundWithFeedback(harness, "close-rollback");
+
+      await expect(
+        rounds.closeRound(round.id, [{ ...credit, builderAccountId: "stranger.near" }]),
+      ).rejects.toThrow();
+
+      expect(await db.select().from(activityOutbox)).toHaveLength(0);
+    });
+  });
+
+  it("queues nothing more when a closed round is closed again", async () => {
+    await withHarness(async (harness) => {
+      const { db, rounds } = harness;
+      const { round } = await openRoundWithFeedback(harness, "close-twice");
+      await rounds.closeRound(round.id, [credit]);
+
+      await expect(rounds.closeRound(round.id, [credit])).rejects.toThrow();
+
+      expect(await db.select().from(activityOutbox)).toHaveLength(2);
+    });
+  });
+
+  it("delivers the events on a later drain after the gateway failed at close time", async () => {
+    await withHarness(async (harness) => {
+      const { db, rounds } = harness;
+      const { round } = await openRoundWithFeedback(harness, "close-gateway-down");
+      await rounds.closeRound(round.id, [credit]);
+
+      const down = fakeEmitter({
+        submitRaw: vi.fn(async () => {
+          throw new Error("gateway down");
+        }),
+      });
+      await createActivityOutboxWorker({ db, emitter: down, logger: { warn: () => {} } }).drain();
+      const parked = await db.select().from(activityOutbox);
+      expect(parked.every((row) => row.status === "pending" && row.attempts === 1)).toBe(true);
+
+      await db.update(activityOutbox).set({ nextAttemptAt: new Date(0) });
+      const emitter = fakeEmitter();
+      await createActivityOutboxWorker({ db, emitter }).drain();
+
+      const delivered = await db.select().from(activityOutbox);
+      expect(delivered.every((row) => row.status === "sent" && row.eventId)).toBe(true);
+      expect(emitter.submitRaw).toHaveBeenCalledTimes(2);
     });
   });
 });

@@ -473,6 +473,52 @@ async function acceptanceIntent(
   return isPrivate ? redactPrivateEvent(intent, row.id) : intent;
 }
 
+function roundClosedIntent(round: RoundRow): ActivityEmitIntent {
+  return {
+    operation: "emit",
+    eventType: "round.closed",
+    actor: round.ownerAccountId,
+    idempotencyKey: `round.closed:${round.id}`,
+    payload: {
+      roundId: round.id,
+      projectSlug: round.projectSlug,
+      title: round.title,
+    },
+  };
+}
+
+type CreditIntentInput = Pick<
+  RoundCreditRecord,
+  | "roundId"
+  | "builderAccountId"
+  | "projectSlug"
+  | "roundTitle"
+  | "writtenCount"
+  | "recordedCount"
+  | "summary"
+>;
+
+async function creditAwardedIntent(
+  credit: CreditIntentInput,
+  isPrivate: boolean,
+): Promise<ActivityEmitIntent> {
+  const intent: ActivityEmitIntent = {
+    operation: "emit",
+    eventType: "credit.awarded",
+    actor: credit.builderAccountId,
+    idempotencyKey: `credit.awarded:${credit.roundId}:${credit.builderAccountId}`,
+    payload: {
+      roundId: credit.roundId,
+      projectSlug: credit.projectSlug,
+      roundTitle: credit.roundTitle,
+      writtenCount: credit.writtenCount,
+      recordedCount: credit.recordedCount,
+      summary: credit.summary,
+    },
+  };
+  return isPrivate ? redactPrivateEvent(intent) : intent;
+}
+
 /**
  * Undo a `feedback.accepted` emit: cancel it if it was never delivered,
  * otherwise queue a retraction of the delivered event.
@@ -1231,7 +1277,12 @@ export const RoundsLive = Layer.effect(
               counts.set(row.accountId, entry);
             }
 
-            for (const credit of credits) {
+            await enqueueActivity(tx, roundClosedIntent(round));
+
+            const finalCredits = new Map(
+              credits.map((credit) => [credit.builderAccountId, credit]),
+            );
+            for (const credit of finalCredits.values()) {
               if (!counts.has(credit.builderAccountId)) {
                 throw new ORPCError("BAD_REQUEST", {
                   message: `${credit.builderAccountId} did not post feedback and can't be credited`,
@@ -1259,6 +1310,24 @@ export const RoundsLive = Layer.effect(
                     recordedCount: c.recorded,
                   },
                 });
+
+              if (credit.contributedMeaningfully) {
+                await enqueueActivity(
+                  tx,
+                  await creditAwardedIntent(
+                    {
+                      roundId,
+                      builderAccountId: credit.builderAccountId,
+                      projectSlug: round.projectSlug,
+                      roundTitle: round.title,
+                      writtenCount: c.written,
+                      recordedCount: c.recorded,
+                      summary: credit.summary ?? null,
+                    },
+                    round.isPrivate,
+                  ),
+                );
+              }
             }
 
             const now = new Date();
