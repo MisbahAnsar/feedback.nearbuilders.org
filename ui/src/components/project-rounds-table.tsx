@@ -3,6 +3,7 @@ import { createColumnHelper, flexRender, tableFeatures, useTable } from "@tansta
 import { useMemo } from "react";
 import { RoundListTitle } from "@/components/round-list-title";
 import { RoundStatusBadge } from "@/components/round-status-badge";
+import { RoundListPrivateMark } from "@/components/rounds-table";
 import {
   Table,
   TableBody,
@@ -65,16 +66,19 @@ export function ProjectRoundsTable({ projects, console, grouped }: ProjectRounds
             const entry = row.original;
             if (entry.kind !== "round") return null;
             return (
-              <Link
-                to={console ? "/manage/$slug/$n" : "/projects/$slug/$n"}
-                params={roundParams({ ...entry.round, projectSlug: entry.project.slug })}
-                className="font-medium text-foreground hover:underline"
-              >
-                <RoundListTitle
-                  title={entry.round.title}
-                  projectRoundNumber={entry.round.projectRoundNumber}
-                />
-              </Link>
+              <>
+                <RoundListPrivateMark isPrivate={entry.round.isPrivate} />
+                <Link
+                  to={console ? "/manage/$slug/$n" : "/projects/$slug/$n"}
+                  params={roundParams({ ...entry.round, projectSlug: entry.project.slug })}
+                  className="font-medium text-foreground hover:underline"
+                >
+                  <RoundListTitle
+                    title={entry.round.title}
+                    projectRoundNumber={entry.round.projectRoundNumber}
+                  />
+                </Link>
+              </>
             );
           },
         }),
