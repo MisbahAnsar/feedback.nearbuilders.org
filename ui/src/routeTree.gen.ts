@@ -30,6 +30,7 @@ import { Route as PublicFeedIndexRouteImport } from './routes/_public/feed/index
 import { Route as PublicFeedRoundIdRouteImport } from './routes/_public/feed/$roundId'
 import { Route as PublicProjectsIndexRouteImport } from './routes/_public/projects/index'
 import { Route as PublicRoundsIndexRouteImport } from './routes/_public/rounds/index'
+import { Route as PublicSendSlugRouteImport } from './routes/_public/send.$slug'
 import { Route as AdminDashboardAdminIndexRouteImport } from './routes/_admin/_dashboard/admin/index'
 import { Route as AdminDashboardAdminProjectsRouteImport } from './routes/_admin/_dashboard/admin/projects'
 import { Route as AuthenticatedDashboardDashboardIndexRouteImport } from './routes/_authenticated/_dashboard/dashboard/index'
@@ -163,6 +164,11 @@ const PublicProjectsIndexRoute = PublicProjectsIndexRouteImport.update({
 const PublicRoundsIndexRoute = PublicRoundsIndexRouteImport.update({
   id: '/rounds/',
   path: '/rounds/',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicSendSlugRoute = PublicSendSlugRouteImport.update({
+  id: '/send/$slug',
+  path: '/send/$slug',
   getParentRoute: () => PublicRoute,
 } as any)
 const AdminDashboardAdminIndexRoute =
@@ -362,6 +368,7 @@ export interface FileRoutesByFullPath {
   '/orgs': typeof AuthenticatedDashboardOrgsRouteWithChildren
   '/settings': typeof AuthenticatedDashboardSettingsRouteWithChildren
   '/feed/$roundId': typeof PublicFeedRoundIdRoute
+  '/send/$slug': typeof PublicSendSlugRoute
   '/$accountId/': typeof PublicAccountIdIndexRoute
   '/feed/': typeof PublicFeedIndexRoute
   '/projects/': typeof PublicProjectsIndexRoute
@@ -405,6 +412,7 @@ export interface FileRoutesByTo {
   '/login': typeof PublicLoginRoute
   '/skill': typeof PublicSkillRoute
   '/feed/$roundId': typeof PublicFeedRoundIdRoute
+  '/send/$slug': typeof PublicSendSlugRoute
   '/$accountId': typeof PublicAccountIdIndexRoute
   '/feed': typeof PublicFeedIndexRoute
   '/projects': typeof PublicProjectsIndexRoute
@@ -457,6 +465,7 @@ export interface FileRoutesById {
   '/_authenticated/_dashboard/orgs': typeof AuthenticatedDashboardOrgsRouteWithChildren
   '/_authenticated/_dashboard/settings': typeof AuthenticatedDashboardSettingsRouteWithChildren
   '/_public/feed/$roundId': typeof PublicFeedRoundIdRoute
+  '/_public/send/$slug': typeof PublicSendSlugRoute
   '/_public/$accountId/': typeof PublicAccountIdIndexRoute
   '/_public/feed/': typeof PublicFeedIndexRoute
   '/_public/projects/': typeof PublicProjectsIndexRoute
@@ -508,6 +517,7 @@ export interface FileRouteTypes {
     | '/orgs'
     | '/settings'
     | '/feed/$roundId'
+    | '/send/$slug'
     | '/$accountId/'
     | '/feed/'
     | '/projects/'
@@ -551,6 +561,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/skill'
     | '/feed/$roundId'
+    | '/send/$slug'
     | '/$accountId'
     | '/feed'
     | '/projects'
@@ -602,6 +613,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_dashboard/orgs'
     | '/_authenticated/_dashboard/settings'
     | '/_public/feed/$roundId'
+    | '/_public/send/$slug'
     | '/_public/$accountId/'
     | '/_public/feed/'
     | '/_public/projects/'
@@ -792,6 +804,13 @@ declare module '@tanstack/react-router' {
       path: '/rounds'
       fullPath: '/rounds/'
       preLoaderRoute: typeof PublicRoundsIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/send/$slug': {
+      id: '/_public/send/$slug'
+      path: '/send/$slug'
+      fullPath: '/send/$slug'
+      preLoaderRoute: typeof PublicSendSlugRouteImport
       parentRoute: typeof PublicRoute
     }
     '/_admin/_dashboard/admin/': {
@@ -1246,6 +1265,7 @@ interface PublicRouteChildren {
   PublicSkillRoute: typeof PublicSkillRoute
   PublicIndexRoute: typeof PublicIndexRoute
   PublicFeedRoundIdRoute: typeof PublicFeedRoundIdRoute
+  PublicSendSlugRoute: typeof PublicSendSlugRoute
   PublicFeedIndexRoute: typeof PublicFeedIndexRoute
   PublicProjectsIndexRoute: typeof PublicProjectsIndexRoute
   PublicRoundsIndexRoute: typeof PublicRoundsIndexRoute
@@ -1262,6 +1282,7 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicSkillRoute: PublicSkillRoute,
   PublicIndexRoute: PublicIndexRoute,
   PublicFeedRoundIdRoute: PublicFeedRoundIdRoute,
+  PublicSendSlugRoute: PublicSendSlugRoute,
   PublicFeedIndexRoute: PublicFeedIndexRoute,
   PublicProjectsIndexRoute: PublicProjectsIndexRoute,
   PublicRoundsIndexRoute: PublicRoundsIndexRoute,

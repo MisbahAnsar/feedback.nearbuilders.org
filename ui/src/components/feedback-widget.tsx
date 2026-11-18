@@ -8,10 +8,10 @@ import { Button, SegmentedToggle, Skeleton, Textarea } from "@/components";
 import { useLegionAccess } from "@/hooks/use-legion-access";
 import { FEEDBACK_TEXT_MAX, feedbackTextLength } from "@/lib/feedback-body";
 import { formatCount, formatDate } from "@/lib/format-date";
+import { latestOpenRound } from "@/lib/latest-open-round";
 import { invalidateFeedbackQueries, myFeedbackQueryOptions } from "@/lib/queries/feedback";
 import { projectQueryOptions } from "@/lib/queries/projects";
 import { roundBySlugQueryOptions } from "@/lib/queries/rounds";
-import { isRoundAcceptingFeedback } from "@/lib/round-expiry";
 import { useRoundJoinMutation } from "@/lib/round-join";
 import { roundHref } from "@/lib/round-links";
 import type { RoundDetail } from "@/lib/round-route";
@@ -64,12 +64,7 @@ export function FeedbackWidget({ projectSlug }: FeedbackWidgetProps) {
 function WidgetPanel({ projectSlug, onClose }: { projectSlug: string; onClose: () => void }) {
   const apiClient = useApiClient();
   const project = useQuery(projectQueryOptions(apiClient, projectSlug));
-  const latestOpen = project.data?.rounds
-    .filter((r) => isRoundAcceptingFeedback(r))
-    .reduce<{ projectRoundNumber: number } | null>(
-      (best, r) => (!best || r.projectRoundNumber > best.projectRoundNumber ? r : best),
-      null,
-    );
+  const latestOpen = latestOpenRound(project.data?.rounds ?? []);
   const round = useQuery({
     ...roundBySlugQueryOptions(apiClient, projectSlug, latestOpen?.projectRoundNumber ?? 0),
     enabled: !!latestOpen,
