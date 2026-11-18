@@ -5,6 +5,7 @@ import { LandingAudience } from "@/components/landing/landing-audience";
 import { LandingBackdrop } from "@/components/landing/landing-backdrop";
 import { LandingBand } from "@/components/landing/landing-band";
 import { LandingCta } from "@/components/landing/landing-cta";
+import { LandingDevelopers } from "@/components/landing/landing-developers";
 import { LandingHero } from "@/components/landing/landing-hero";
 import { LandingLiveRounds } from "@/components/landing/landing-live-rounds";
 import { LandingProof } from "@/components/landing/landing-proof";
@@ -52,6 +53,9 @@ function LandingPage() {
         <LandingAudience />
       </LandingBand>
       <LandingBand>
+        <LandingDevelopers />
+      </LandingBand>
+      <LandingBand tone="lifted">
         <LandingCta />
       </LandingBand>
     </div>

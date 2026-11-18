@@ -1,3 +1,4 @@
+import { NumberTicker } from "@/components/landing/number-ticker";
 import type { LandingStats } from "@/lib/landing-stats";
 
 const ITEMS: Array<{ key: keyof LandingStats; label: string }> = [
@@ -16,7 +17,7 @@ export function LandingProof({ stats }: { stats: LandingStats | null }) {
       {ITEMS.map(({ key, label }) => (
         <div key={key} className="space-y-1 border-border p-4 max-sm:border-b">
           <p className="text-2xl font-semibold leading-none tracking-tight text-foreground">
-            {stats ? stats[key] : "-"}
+            {stats ? <NumberTicker value={stats[key]} /> : "-"}
           </p>
           <p className="text-xs text-muted-foreground">{label}</p>
         </div>

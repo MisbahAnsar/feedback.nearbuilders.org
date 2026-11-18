@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components";
 import { LandingHeading, LandingHighlight } from "@/components/landing/landing-heading";
+import { LandingTopTesters } from "@/components/landing/landing-top-testers";
 import { RoundListTitle } from "@/components/round-list-title";
 import { roundParams } from "@/lib/round-links";
 
@@ -36,48 +37,54 @@ export function LandingLiveRounds({
           </Link>
         </Button>
       </div>
-      {isLoading ? (
-        <div className="space-y-px border border-border bg-border" aria-busy="true">
-          {[0, 1, 2].map((row) => (
-            <div key={row} className="h-16 animate-pulse bg-card" />
-          ))}
+      <div className="grid gap-6 lg:grid-cols-split-2-1">
+        <div>
+          {isLoading ? (
+            <div className="space-y-px border border-border bg-border" aria-busy="true">
+              {[0, 1, 2].map((row) => (
+                <div key={row} className="h-16 animate-pulse bg-card" />
+              ))}
+            </div>
+          ) : isError ? (
+            <p className="border border-border bg-card p-4 text-sm text-muted-foreground">
+              Could not load open rounds right now.
+            </p>
+          ) : rounds.length === 0 ? (
+            <p className="border border-border bg-card p-4 text-sm text-muted-foreground">
+              No rounds are open right now. Check back soon, or request a round for your own
+              project.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border border border-border bg-card">
+              {rounds.map((round) => (
+                <li key={round.id}>
+                  <Link
+                    to="/projects/$slug/$n"
+                    params={roundParams(round)}
+                    className="flex items-center justify-between gap-4 p-4 hover:bg-accent"
+                  >
+                    <span className="min-w-0 space-y-1">
+                      <span className="block truncate text-sm font-semibold text-foreground">
+                        <RoundListTitle
+                          title={round.title}
+                          projectRoundNumber={round.projectRoundNumber}
+                        />
+                      </span>
+                      <span className="block truncate font-mono text-3xs text-muted-foreground">
+                        {round.identity?.title ?? round.projectSlug} · {round.formats.join(", ")}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {round.participantCount} {round.participantCount === 1 ? "tester" : "testers"}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      ) : isError ? (
-        <p className="border border-border bg-card p-4 text-sm text-muted-foreground">
-          Could not load open rounds right now.
-        </p>
-      ) : rounds.length === 0 ? (
-        <p className="border border-border bg-card p-4 text-sm text-muted-foreground">
-          No rounds are open right now. Check back soon, or request a round for your own project.
-        </p>
-      ) : (
-        <ul className="divide-y divide-border border border-border bg-card">
-          {rounds.map((round) => (
-            <li key={round.id}>
-              <Link
-                to="/projects/$slug/$n"
-                params={roundParams(round)}
-                className="flex items-center justify-between gap-4 p-4 hover:bg-accent"
-              >
-                <span className="min-w-0 space-y-1">
-                  <span className="block truncate text-sm font-semibold text-foreground">
-                    <RoundListTitle
-                      title={round.title}
-                      projectRoundNumber={round.projectRoundNumber}
-                    />
-                  </span>
-                  <span className="block truncate font-mono text-3xs text-muted-foreground">
-                    {round.identity?.title ?? round.projectSlug} · {round.formats.join(", ")}
-                  </span>
-                </span>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {round.participantCount} {round.participantCount === 1 ? "tester" : "testers"}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+        <LandingTopTesters />
+      </div>
     </section>
   );
 }

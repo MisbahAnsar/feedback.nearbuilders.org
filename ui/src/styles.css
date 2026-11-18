@@ -368,6 +368,15 @@
   mask-image: radial-gradient(ellipse 80% 70% at 70% 45%, black 30%, transparent 75%);
 }
 
+.landing-dots {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--foreground) 10%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+  mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, black 40%, transparent 90%);
+}
+
 .landing-signals {
   mask-image: radial-gradient(ellipse 70% 60% at 70% 45%, black, transparent);
 }
