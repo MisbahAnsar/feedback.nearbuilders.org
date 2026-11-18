@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { NearBranding } from "@/components/layout/near-branding";
+import { PublicFooter } from "@/components/layout/public-footer";
 import { PublicHeader } from "./public-header";
 
 interface PublicShellProps {
@@ -15,14 +15,12 @@ export function PublicShell({ children, footer, showConnect = true }: PublicShel
 
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
         <div className="flex-1 flex flex-col">{children}</div>
-        {footer && (
-          <footer className="shrink-0 flex items-center justify-center py-6">{footer}</footer>
-        )}
+        {footer && <footer className="shrink-0">{footer}</footer>}
       </div>
     </div>
   );
 }
 
 export function PublicShellFooter() {
-  return <NearBranding />;
+  return <PublicFooter />;
 }

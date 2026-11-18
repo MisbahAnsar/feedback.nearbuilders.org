@@ -1,10 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components";
+import { LandingHeading, LandingHighlight } from "@/components/landing/landing-heading";
 import { RoundListTitle } from "@/components/round-list-title";
 import { roundParams } from "@/lib/round-links";
 
-interface LiveRound {
+export interface LiveRound {
   id: string;
   title: string;
   projectSlug: string;
@@ -24,14 +25,11 @@ export function LandingLiveRounds({
   isError: boolean;
 }) {
   return (
-    <section className="space-y-4" aria-labelledby="live-rounds">
+    <section className="space-y-6" aria-labelledby="live-rounds">
       <div className="flex items-end justify-between gap-4">
-        <h2
-          id="live-rounds"
-          className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
-        >
-          Open now
-        </h2>
+        <LandingHeading id="live-rounds" eyebrow="Open now">
+          Rounds you can <LandingHighlight>join today</LandingHighlight>
+        </LandingHeading>
         <Button asChild variant="ghost" size="sm">
           <Link to="/rounds">
             all rounds <ArrowRight />
