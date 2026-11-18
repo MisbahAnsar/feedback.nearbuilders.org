@@ -48,7 +48,7 @@ export function AgentReviewPanel({ round }: AgentReviewPanelProps) {
   });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div className="grid gap-6 lg:grid-cols-split-2-1">
       <Card className="space-y-5 p-4">
         <div className="space-y-1">
           <h2 className="text-sm font-medium text-foreground">Review this round with an agent</h2>

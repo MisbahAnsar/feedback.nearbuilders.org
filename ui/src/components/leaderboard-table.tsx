@@ -38,10 +38,7 @@ export function LeaderboardTable({ entries, currentAccountId }: LeaderboardTable
           id: "rank",
           header: "Rank",
           cell: ({ row }) => (
-            <Badge
-              variant={row.original.rank <= 3 ? "secondary" : "outline"}
-              className="text-[10px]"
-            >
+            <Badge variant={row.original.rank <= 3 ? "secondary" : "outline"} className="text-3xs">
               #{row.original.rank}
             </Badge>
           ),
@@ -59,7 +56,7 @@ export function LeaderboardTable({ entries, currentAccountId }: LeaderboardTable
                 {row.original.actor}
               </Link>
               {row.original.actor === currentAccountId && (
-                <Badge className="ml-2 text-[10px]">you</Badge>
+                <Badge className="ml-2 text-3xs">you</Badge>
               )}
             </>
           ),
