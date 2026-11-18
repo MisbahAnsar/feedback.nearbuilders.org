@@ -1,4 +1,5 @@
-import { ClipboardCheck, Lock, MessageSquare, Trophy, UserCheck } from "lucide-react";
+import { Bot, ClipboardCheck, Lock, MessageSquare, Trophy, UserCheck } from "lucide-react";
+import { LandingHeading, LandingHighlight } from "@/components/landing/landing-heading";
 
 const TILES = [
   {
@@ -26,21 +27,23 @@ const TILES = [
     title: "Credit that lasts",
     body: "Every round closes with a durable record that shows on each builder's NEAR Builders profile.",
   },
+  {
+    icon: Bot,
+    title: "Review with an agent",
+    body: "Connect an agent over MCP with an organization key to cluster feedback and suggest what to resolve.",
+  },
 ];
 
 export function LandingWhy() {
   return (
     <section className="space-y-6" aria-labelledby="why-feedback">
-      <h2
-        id="why-feedback"
-        className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
-      >
-        How a round works
-      </h2>
+      <LandingHeading id="why-feedback" eyebrow="Why feedback rounds">
+        How a <LandingHighlight>round</LandingHighlight> works
+      </LandingHeading>
       <div className="grid gap-px border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
         {TILES.map(({ icon: Icon, title, body }) => (
           <div key={title} className="space-y-3 bg-card p-5">
-            <div className="flex size-10 items-center justify-center bg-foreground text-background">
+            <div className="flex size-10 items-center justify-center bg-brand-accent text-brand-on-accent">
               <Icon className="size-4" />
             </div>
             <h3 className="text-base font-semibold text-foreground">{title}</h3>

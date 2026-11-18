@@ -2,12 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useApiClient } from "@/app";
 import { LandingAudience } from "@/components/landing/landing-audience";
+import { LandingBackdrop } from "@/components/landing/landing-backdrop";
+import { LandingBand } from "@/components/landing/landing-band";
 import { LandingCta } from "@/components/landing/landing-cta";
 import { LandingHero } from "@/components/landing/landing-hero";
 import { LandingLiveRounds } from "@/components/landing/landing-live-rounds";
 import { LandingProof } from "@/components/landing/landing-proof";
 import { LandingWhy } from "@/components/landing/landing-why";
-import { PageContainer } from "@/components/layout/page-container";
 import { computeLandingStats, liveRounds } from "@/lib/landing-stats";
 import { pageHead } from "@/lib/page-title";
 import { roundsQueryOptions } from "@/lib/queries/rounds";
@@ -29,20 +30,30 @@ function LandingPage() {
   const closed = useQuery(roundsQueryOptions(apiClient, "closed"));
   const stats = open.data && closed.data ? computeLandingStats(open.data, closed.data) : null;
 
+  const openRounds = open.data ? liveRounds(open.data, LIVE_ROUNDS_LIMIT) : [];
+
   return (
-    <PageContainer variant="wide" className="pt-12 pb-16 sm:pt-20 sm:pb-24">
-      <div className="space-y-16 sm:space-y-20">
-        <LandingHero />
+    <div>
+      <LandingBand
+        className="relative overflow-hidden"
+        innerClassName="relative space-y-14 pt-10 pb-16 sm:space-y-20 sm:pt-16 sm:pb-20"
+      >
+        <LandingBackdrop />
+        <LandingHero rounds={openRounds} />
         <LandingProof stats={stats} />
-        <LandingLiveRounds
-          rounds={open.data ? liveRounds(open.data, LIVE_ROUNDS_LIMIT) : []}
-          isLoading={open.isPending}
-          isError={open.isError}
-        />
+      </LandingBand>
+      <LandingBand tone="lifted">
+        <LandingLiveRounds rounds={openRounds} isLoading={open.isPending} isError={open.isError} />
+      </LandingBand>
+      <LandingBand>
         <LandingWhy />
+      </LandingBand>
+      <LandingBand tone="lifted">
         <LandingAudience />
+      </LandingBand>
+      <LandingBand>
         <LandingCta />
-      </div>
-    </PageContainer>
+      </LandingBand>
+    </div>
   );
 }
