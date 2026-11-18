@@ -8,6 +8,7 @@ import { FeedbackComposer } from "@/components/feedback-composer";
 import { FeedbackList } from "@/components/feedback-list";
 import { FeedbackNoteForm, FeedbackNoteThread } from "@/components/feedback-notes";
 import { RouteError, RoutePending } from "@/components/route-states";
+import { contextFromSearch } from "@/lib/feedback-context";
 import { roundFeedbackPermissions } from "@/lib/feedback-edit";
 import { myFeedbackQueryOptions } from "@/lib/queries/feedback";
 import { myFeedbackHref } from "@/lib/round-links";
@@ -21,6 +22,11 @@ import { absoluteUrl, copyUrl } from "@/lib/share";
  * URL, so a round has one address whoever is looking at it.
  */
 export const Route = createFileRoute("/_public/projects/$slug/$n/submit")({
+  // `from` and `vp` come from the embed launcher: the host page address and window size (#294).
+  validateSearch: (search: Record<string, unknown>): { from?: string; vp?: string } => ({
+    from: typeof search.from === "string" ? search.from : undefined,
+    vp: typeof search.vp === "string" ? search.vp : undefined,
+  }),
   // Only the round is prefetched: listMyFeedback needs a session, and this tab
   // is reachable (and renders a join prompt) while signed out.
   loader: ({ context, params }) => loadRound(context, params),
@@ -31,6 +37,7 @@ export const Route = createFileRoute("/_public/projects/$slug/$n/submit")({
 
 function SubmitFeedbackTab() {
   const params = Route.useParams();
+  const search = Route.useSearch();
   const round = useRound(params);
   const viewer = useRoundViewer(round);
   const feedbackPermissions = roundFeedbackPermissions(round.status, viewer.isExpired);
@@ -50,7 +57,13 @@ function SubmitFeedbackTab() {
 
   return (
     <div className="space-y-6">
-      {viewer.canPost && <FeedbackComposer round={round} accountId={viewer.accountId} />}
+      {viewer.canPost && (
+        <FeedbackComposer
+          round={round}
+          accountId={viewer.accountId}
+          context={contextFromSearch(search)}
+        />
+      )}
       <MySubmissions
         round={round}
         accountId={viewer.accountId}
