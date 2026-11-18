@@ -1,54 +1,85 @@
-import { Bot, ClipboardCheck, Lock, MessageSquare, Trophy, UserCheck } from "lucide-react";
+import type { ReactNode } from "react";
 import { LandingHeading, LandingHighlight } from "@/components/landing/landing-heading";
+import {
+  AgentVisual,
+  CreditVisual,
+  JoinVisual,
+  PrivacyVisual,
+  RoundVisual,
+  WinnersVisual,
+} from "@/components/landing/landing-visuals";
+import { cn } from "@/lib/utils";
 
-const TILES = [
+interface Tile {
+  key: string;
+  title: string;
+  body: string;
+  visual: ReactNode;
+  className?: string;
+}
+
+const TILES: Tile[] = [
   {
-    icon: MessageSquare,
+    key: "round",
     title: "A project requests a round",
     body: "Describe what to test, pick the feedback formats you want, and open the round for signups.",
+    visual: <RoundVisual />,
+    className: "lg:col-span-2 lg:row-span-2",
   },
   {
-    icon: UserCheck,
+    key: "join",
     title: "Builders sign up and test",
     body: "Builders join, try the product, and submit written notes, a recorded session or GitHub issues.",
+    visual: <JoinVisual />,
   },
   {
-    icon: Lock,
+    key: "private",
     title: "Private when you need it",
     body: "Rounds are private by default: feedback is readable only by your team and each author.",
+    visual: <PrivacyVisual />,
   },
   {
-    icon: Trophy,
+    key: "winners",
     title: "Winners get recognised",
     body: "Mark the best contributors as winners, ranked, right on the participants list.",
+    visual: <WinnersVisual />,
   },
   {
-    icon: ClipboardCheck,
+    key: "credit",
     title: "Credit that lasts",
     body: "Every round closes with a durable record that shows on each builder's NEAR Builders profile.",
+    visual: <CreditVisual />,
   },
   {
-    icon: Bot,
+    key: "agent",
     title: "Review with an agent",
     body: "Connect an agent over MCP with an organization key to cluster feedback and suggest what to resolve.",
+    visual: <AgentVisual />,
   },
 ];
 
 export function LandingWhy() {
   return (
-    <section className="space-y-6" aria-labelledby="why-feedback">
-      <LandingHeading id="why-feedback" eyebrow="Why feedback rounds">
+    <section className="space-y-8" aria-labelledby="why-feedback">
+      <LandingHeading
+        id="why-feedback"
+        eyebrow="Why feedback rounds"
+        description="Real testers, a private inbox, and a record of who helped. Everything a round needs, in one place."
+      >
         How a <LandingHighlight>round</LandingHighlight> works
       </LandingHeading>
-      <div className="grid gap-px border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
-        {TILES.map(({ icon: Icon, title, body }) => (
-          <div key={title} className="space-y-3 bg-card p-5">
-            <div className="flex size-10 items-center justify-center bg-brand-accent text-brand-on-accent">
-              <Icon className="size-4" />
+      <div className="grid gap-4 lg:grid-cols-3">
+        {TILES.map(({ key, title, body, visual, className }) => (
+          <article
+            key={key}
+            className={cn("flex flex-col border border-border bg-card", className)}
+          >
+            {visual}
+            <div className="space-y-1 border-t border-border p-5">
+              <h3 className="text-base font-semibold text-foreground">{title}</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
             </div>
-            <h3 className="text-base font-semibold text-foreground">{title}</h3>
-            <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-          </div>
+          </article>
         ))}
       </div>
     </section>
