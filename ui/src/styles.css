@@ -52,12 +52,12 @@
   --color-brand-chartreuse: var(--brand-chartreuse);
   --color-brand-cobalt: var(--brand-cobalt);
 
-  --radius-2xs: 0.25rem; /* 4px, between stock rounded-xs (2px) and this theme's rounded-sm (8px) */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
-  --radius-2xl: 1.5rem;
+  --radius-2xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
 
   --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, Menlo, monospace;
@@ -102,7 +102,7 @@
   --input: #e4e4e7;
   --ring: #18181b;
   --overlay: #18181b;
-  --radius: 0.75rem;
+  --radius: 0;
 
   --brand-cyan: #00d9a3;
   --brand-green: #00d9a3;
@@ -153,7 +153,7 @@
   --input: #27272a;
   --ring: #fafafa;
   --overlay: #000000;
-  --radius: 0.75rem;
+  --radius: 0;
 
   --brand-cyan: #00d9a3;
   --brand-green: #00d9a3;
