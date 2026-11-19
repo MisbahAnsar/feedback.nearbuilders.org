@@ -69,7 +69,7 @@ export function ProjectPartners({ projectId, partners, canManagePartners }: Proj
           {partners.map((partner) => (
             <li
               key={partner.organizationId}
-              className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2"
+              className="flex items-center justify-between gap-2 rounded-none border border-border px-3 py-2"
             >
               <span className="text-sm text-foreground break-all">
                 @{partner.slug ?? partner.organizationId}

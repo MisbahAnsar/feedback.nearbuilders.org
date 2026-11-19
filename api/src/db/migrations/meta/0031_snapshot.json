@@ -1,5 +1,5 @@
 {
-  "id": "922f5d33-ab05-46cb-b165-248283f76022",
+  "id": "6a5a58c9-e19d-496a-88ea-41826947313f",
   "prevId": "06f18d3c-824b-417d-99ac-a47ec7beda0c",
   "version": "7",
   "dialect": "postgresql",
@@ -360,6 +360,105 @@
           "tableFrom": "feedback_notes",
           "tableTo": "round_feedback",
           "columnsFrom": ["feedback_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.feedback_suggestions": {
+      "name": "feedback_suggestions",
+      "schema": "",
+      "columns": {
+        "feedback_id": {
+          "name": "feedback_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "round_id": {
+          "name": "round_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "round_feedback_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "star": {
+          "name": "star",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "suggested_by_key_id": {
+          "name": "suggested_by_key_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "feedback_suggestions_round_idx": {
+          "name": "feedback_suggestions_round_idx",
+          "columns": [
+            {
+              "expression": "round_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "feedback_suggestions_feedback_id_round_feedback_id_fk": {
+          "name": "feedback_suggestions_feedback_id_round_feedback_id_fk",
+          "tableFrom": "feedback_suggestions",
+          "tableTo": "round_feedback",
+          "columnsFrom": ["feedback_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "feedback_suggestions_round_id_rounds_id_fk": {
+          "name": "feedback_suggestions_round_id_rounds_id_fk",
+          "tableFrom": "feedback_suggestions",
+          "tableTo": "rounds",
+          "columnsFrom": ["round_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -760,12 +859,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
-        },
-        "activity_event_id": {
-          "name": "activity_event_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -1212,12 +1305,6 @@
         },
         "activity_event_id": {
           "name": "activity_event_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "closed_activity_event_id": {
-          "name": "closed_activity_event_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false

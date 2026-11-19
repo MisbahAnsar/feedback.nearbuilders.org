@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RoundBannerForm } from "@/components/round-banner-form";
 import { RoundDangerZone } from "@/components/round-danger-zone";
+import { RoundEmbedPanel } from "@/components/round-embed-panel";
 import { RoundFormatsForm } from "@/components/round-formats-form";
 import { RoundReadme } from "@/components/round-readme";
 import { RoundSettingsPanel } from "@/components/round-settings-panel";
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/_dashboard/manage/$slug/$n
 function SettingsTab() {
   const round = useRound(Route.useParams());
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div className="grid gap-6 lg:grid-cols-split-2-1">
       <RoundReadme roundId={round.id} readme={round.readme} canEdit />
       <div className="space-y-6">
         <RoundBannerForm key={round.bannerUrl ?? ""} round={round} />
@@ -25,6 +26,7 @@ function SettingsTab() {
           legionOnly={round.legionOnly}
           endsAt={round.endsAt}
         />
+        <RoundEmbedPanel projectSlug={round.projectSlug} />
         <RoundDangerZone round={round} />
       </div>
     </div>

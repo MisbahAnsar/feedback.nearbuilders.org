@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 import { useState } from "react";
 import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components";
+import { BrandMark } from "@/components/layout/brand-mark";
 import { getActiveItem, getPublicNavItems } from "./nav-items";
 import { UserNav } from "./user-nav";
 
@@ -56,9 +57,10 @@ export function PublicHeader({ showConnect = true }: PublicHeaderProps) {
         <Link
           to="/"
           preload="intent"
-          className="shrink-0 text-lg font-semibold text-foreground"
+          className="flex shrink-0 items-center gap-2 text-lg font-semibold text-foreground"
           data-testid="public-nav-home"
         >
+          <BrandMark className="size-10" />
           Feedback Rounds
         </Link>
         <PublicNavLinks className="hidden min-w-0 flex-1 items-center gap-4 md:ml-6 md:flex" />

@@ -1,17 +1,26 @@
+/* oxlint-disable shadcn/no-arbitrary-values -- widget panel sizes itself against the viewport with calc()/min() */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { MessageCircle, X } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 import { useApiClient } from "@/app";
-import { Button, SegmentedToggle, Skeleton, Textarea } from "@/components";
+import { Button, Checkbox, SegmentedToggle, Skeleton, Textarea } from "@/components";
 import { useLegionAccess } from "@/hooks/use-legion-access";
 import { FEEDBACK_TEXT_MAX, feedbackTextLength } from "@/lib/feedback-body";
+import { appendContext, readLiveContext } from "@/lib/feedback-context";
 import { formatCount, formatDate } from "@/lib/format-date";
+import {
+  composeGuidedReport,
+  EMPTY_GUIDED_ANSWERS,
+  GUIDED_QUESTIONS,
+  type GuidedAnswers,
+  isGuidedComplete,
+} from "@/lib/guided-feedback";
+import { latestOpenRound } from "@/lib/latest-open-round";
 import { invalidateFeedbackQueries, myFeedbackQueryOptions } from "@/lib/queries/feedback";
 import { projectQueryOptions } from "@/lib/queries/projects";
 import { roundBySlugQueryOptions } from "@/lib/queries/rounds";
-import { isRoundAcceptingFeedback } from "@/lib/round-expiry";
 import { useRoundJoinMutation } from "@/lib/round-join";
 import { roundHref } from "@/lib/round-links";
 import type { RoundDetail } from "@/lib/round-route";
@@ -41,7 +50,7 @@ export function FeedbackWidget({ projectSlug }: FeedbackWidgetProps) {
         <section
           aria-label="Feedback"
           data-testid="feedback-widget-panel"
-          className="flex max-h-[min(36rem,calc(100dvh-6rem))] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-lg sm:w-96"
+          className="flex max-h-[min(36rem,calc(100dvh-6rem))] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-none border border-border bg-card text-card-foreground shadow-lg sm:w-96"
         >
           <WidgetPanel projectSlug={projectSlug} onClose={() => setOpen(false)} />
         </section>
@@ -49,7 +58,7 @@ export function FeedbackWidget({ projectSlug }: FeedbackWidgetProps) {
       <Button
         type="button"
         size="icon"
-        className="h-12 w-12 rounded-full shadow-lg"
+        className="h-12 w-12 rounded-none"
         aria-label={open ? "Close feedback" : "Give feedback"}
         aria-expanded={open}
         data-testid="feedback-widget-launcher"
@@ -64,12 +73,7 @@ export function FeedbackWidget({ projectSlug }: FeedbackWidgetProps) {
 function WidgetPanel({ projectSlug, onClose }: { projectSlug: string; onClose: () => void }) {
   const apiClient = useApiClient();
   const project = useQuery(projectQueryOptions(apiClient, projectSlug));
-  const latestOpen = project.data?.rounds
-    .filter((r) => isRoundAcceptingFeedback(r))
-    .reduce<{ projectRoundNumber: number } | null>(
-      (best, r) => (!best || r.projectRoundNumber > best.projectRoundNumber ? r : best),
-      null,
-    );
+  const latestOpen = latestOpenRound(project.data?.rounds ?? []);
   const round = useQuery({
     ...roundBySlugQueryOptions(apiClient, projectSlug, latestOpen?.projectRoundNumber ?? 0),
     enabled: !!latestOpen,
@@ -186,17 +190,28 @@ function HomeTab({
   const queryClient = useQueryClient();
   const [kind, setKind] = useState<SubmissionKind>("issue");
   const [text, setText] = useState("");
+  const [attach, setAttach] = useState(true);
+  // Issues start as a few short questions; the tester can switch to one free box (#300).
+  const [guided, setGuided] = useState(true);
+  const [answers, setAnswers] = useState<GuidedAnswers>(EMPTY_GUIDED_ANSWERS);
+  const isGuided = kind === "issue" && guided;
+  const reportText = isGuided ? composeGuidedReport(answers) : text;
+  const canSend = isGuided ? isGuidedComplete(answers) : text.trim().length > 0;
 
   const post = useMutation({
     mutationFn: () =>
       apiClient.postFeedback({
         id: round.id,
         format: "written",
-        body: `${KIND_PREFIX[kind]}${text.trim()}`,
+        body: appendContext(
+          `${KIND_PREFIX[kind]}${reportText.trim()}`,
+          attach ? readLiveContext() : undefined,
+        ),
       }),
     onSuccess: () => {
       void invalidateFeedbackQueries(queryClient, round.id);
       setText("");
+      setAnswers(EMPTY_GUIDED_ANSWERS);
       toast.success("Thanks, your feedback was sent");
       onPosted();
     },
@@ -299,7 +314,7 @@ function HomeTab({
     );
   }
 
-  const length = feedbackTextLength(text);
+  const length = feedbackTextLength(reportText);
   const tooLong = length > FEEDBACK_TEXT_MAX;
 
   return (
@@ -307,7 +322,7 @@ function HomeTab({
       className="flex flex-col gap-3"
       onSubmit={(event) => {
         event.preventDefault();
-        if (text.trim() && !tooLong) post.mutate();
+        if (canSend && !tooLong) post.mutate();
       }}
     >
       <p className="text-sm font-medium">How can we help?</p>
@@ -321,19 +336,73 @@ function HomeTab({
           { value: "feature", label: "Request a feature" },
         ]}
       />
-      <Textarea
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        placeholder={kind === "issue" ? "What went wrong?" : "What would you like to see?"}
-        rows={5}
-        aria-label="Your feedback"
-        disabled={post.isPending}
-      />
+      {isGuided ? (
+        <div className="flex flex-col gap-3">
+          {GUIDED_QUESTIONS.map(({ key, label, placeholder, rows }) => (
+            <label
+              key={key}
+              className="flex flex-col gap-1 text-xs"
+              htmlFor={`widget-guided-${key}`}
+            >
+              <span className="font-medium text-foreground">{label}</span>
+              <Textarea
+                id={`widget-guided-${key}`}
+                value={answers[key]}
+                onChange={(event) => setAnswers((prev) => ({ ...prev, [key]: event.target.value }))}
+                placeholder={placeholder}
+                rows={rows}
+                disabled={post.isPending}
+              />
+            </label>
+          ))}
+          <button
+            type="button"
+            className="self-start text-xs text-muted-foreground underline underline-offset-2"
+            onClick={() => setGuided(false)}
+          >
+            Write it in your own words instead
+          </button>
+        </div>
+      ) : (
+        <>
+          <Textarea
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder={kind === "issue" ? "What went wrong?" : "What would you like to see?"}
+            rows={5}
+            aria-label="Your feedback"
+            disabled={post.isPending}
+          />
+          {kind === "issue" && (
+            <button
+              type="button"
+              className="self-start text-xs text-muted-foreground underline underline-offset-2"
+              onClick={() => setGuided(true)}
+            >
+              Answer a few questions instead
+            </button>
+          )}
+        </>
+      )}
+      <label
+        className="flex cursor-pointer items-start gap-2 text-xs text-muted-foreground"
+        htmlFor="widget-attach-context"
+      >
+        <Checkbox
+          id="widget-attach-context"
+          checked={attach}
+          disabled={post.isPending}
+          onCheckedChange={(checked) => setAttach(checked === true)}
+        />
+        <span>
+          Include page details: the page address (no query), your browser and window size.
+        </span>
+      </label>
       <div className="flex items-center justify-between gap-2">
         <span className={cn("text-xs text-muted-foreground", tooLong && "text-destructive")}>
           {formatCount(length)} / {formatCount(FEEDBACK_TEXT_MAX)}
         </span>
-        <Button type="submit" size="sm" disabled={!text.trim() || tooLong || post.isPending}>
+        <Button type="submit" size="sm" disabled={!canSend || tooLong || post.isPending}>
           {post.isPending ? "Sending…" : "Send"}
         </Button>
       </div>
@@ -366,7 +435,7 @@ function MessagesTab({ round, signedIn }: { round: RoundDetail; signedIn: boolea
   return (
     <ul className="flex flex-col gap-3" data-testid="feedback-widget-messages">
       {mine.data.map((item) => (
-        <li key={item.id} className="rounded-md border border-border p-3">
+        <li key={item.id} className="rounded-none border border-border p-3">
           <p className="line-clamp-4 whitespace-pre-wrap text-sm">
             {plainText(item.body, item.url)}
           </p>
